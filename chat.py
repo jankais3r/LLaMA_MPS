@@ -7,6 +7,7 @@ import torch
 import fire
 import time
 import json
+import random
 import warnings
 from typing import Tuple
 from pathlib import Path
@@ -21,7 +22,9 @@ def setup_model_parallel() -> Tuple[int, int]:
 
     torch.distributed.init_process_group("gloo")
     initialize_model_parallel(world_size)
-    torch.manual_seed(1)
+    random_seed = random.randint(1, 65534)
+    torch.manual_seed(random_seed)
+    print(f"Seed: {random_seed:5d}")
     return local_rank, world_size
 
 
@@ -64,6 +67,10 @@ def main(
     tokenizer_path: str, 
     temperature: float = 0.8, 
     top_p: float = 0.95, 
+    use_repetition_penalty = True, 
+    repetition_penalty_range: int = 1024, 
+    repetition_penalty_slope: float = 0, 
+    repetition_penalty: float = 1.15, 
     max_seq_len: int = 512, 
     max_batch_size: int = 1):
     local_rank, world_size = setup_model_parallel()
@@ -80,7 +87,14 @@ def main(
             print("Thinking...")
             queryTime = time.time()
             results = generator.generate(
-                queryInputs, max_gen_len = 512, temperature = temperature, top_p = top_p
+                queryInputs, 
+                max_gen_len = 512, 
+                temperature=temperature, 
+                top_p = top_p, 
+                use_repetition_penalty = use_repetition_penalty, 
+                repetition_penalty_range = repetition_penalty_range, 
+                repetition_penalty_slope = repetition_penalty_slope, 
+                repetition_penalty = repetition_penalty
             )
             print(f"\nInferred in {time.time() - queryTime:.2f} seconds")
             print("==================================\n")
