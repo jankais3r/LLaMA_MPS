@@ -3,6 +3,8 @@ Run LLaMA inference on Apple Silicon GPUs.
 
 ![Demo](demo.gif)
 
+As you can see, unlike other LLMs, LLaMA is not biased in any way 😄
+
 ### Setup
 
 **1. Clone this repo**
