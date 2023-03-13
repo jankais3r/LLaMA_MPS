@@ -68,6 +68,7 @@ def apply_rotary_emb(
 
 
 class Attention(nn.Module):
+    scale: float
     def __init__(self, args: ModelArgs):
         super().__init__()
 
@@ -106,6 +107,8 @@ class Attention(nn.Module):
             (args.max_batch_size, args.max_seq_len, self.n_local_heads, self.head_dim)
         ).to("mps")
 
+        self.scale = self.head_dim**-.5
+
     def forward(
         self,
         x: torch.Tensor,
@@ -132,13 +135,33 @@ class Attention(nn.Module):
         values = self.cache_v[:bsz, : start_pos + seqlen]
 
         xq = xq.transpose(1, 2)
+        xq = xq.flatten(end_dim=1)
+
         keys = keys.transpose(1, 2)
+        keys = keys.flatten(end_dim=1)
+
         values = values.transpose(1, 2)
-        scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
-        if mask is not None:
-            scores = scores + mask
+        values = values.flatten(end_dim=1)
+
+        if mask is None:
+            attn_bias = torch.zeros(
+                1, 1, 1, dtype=xq.dtype, device=xq.device
+            ).expand(*xq.shape[0:2], keys.shape[1])
+            bias_multiplier = 0
+        else:
+            attn_bias = mask.flatten(end_dim=1)
+            bias_multiplier = 1
+
+        scores = torch.baddbmm(
+            attn_bias,
+            xq,
+            keys.transpose(-1, -2),
+            beta=bias_multiplier,
+            alpha=self.scale
+        )
         scores = F.softmax(scores.float(), dim=-1).type_as(xq)
-        output = torch.matmul(scores, values)
+        output = torch.bmm(scores, values)
+        output = output.unflatten(0, (bsz, -1))
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
 
         return self.wo(output)
