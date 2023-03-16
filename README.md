@@ -5,23 +5,26 @@ Run LLaMA (and Stanford-Alpaca) inference on Apple Silicon GPUs.
 
 As you can see, unlike other LLMs, LLaMA is not biased in any way 😄
 
-### Setup
+### Initial setup steps
 
 **1. Clone this repo**
 
 `git clone https://github.com/jankais3r/LLaMA_MPS`
 
-**2. [Download the model weights](https://github.com/facebookresearch/llama/pull/73/files#diff-b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5R4) and put them into a folder called** `models` (e.g., `LLaMA_MPS/models/7B`)
-
-**3. Install Python dependencies**
+**2. Install Python dependencies**
 
 ```bash
+cd LLaMA_MPS
 pip3 install virtualenv
 python3 -m venv env
 source env/bin/activate
 pip3 install -r requirements.txt
 pip3 install -e .
 ```
+
+### LLaMA-specific setup
+
+**3. [Download the model weights](https://github.com/facebookresearch/llama/pull/73/files#diff-b335630551682c19a781afebcf4d07bf978fb1f8ac04c6bf87428ed5106870f5R4) and put them into a folder called** `models` (e.g., `LLaMA_MPS/models/7B`)
 
 **4. _(Optional)_ Reshard the model weights (13B/30B/65B)**
 
@@ -37,10 +40,17 @@ python3 reshard.py 1 models/13B_orig models/13B
 
 `python3 chat.py --ckpt_dir models/13B --tokenizer_path models/tokenizer.model --max_batch_size 8 --max_seq_len 256`
 
-### Stanford Alpaca
+The above steps will let you run inference on the raw LLaMA model in an 'auto-complete' mode.
+
+If you would like to try the 'instruction-response' mode similar to ChatGPT using the fine-tuned weights of [Stanford Alpaca](https://github.com/tatsu-lab/stanford_alpaca), continue the setup with the following steps:
+
+### Alpaca-specific setup
 
 ![Alpaca demo](alpaca.gif)
 
+<<<<<<< HEAD
+**3. Download the fine-tuned weights (available for 7B/13B)**
+=======
 The above steps will let you run inference on the raw LLaMA model in an 'auto-complete' mode.
 
 If you would like to try the 'instruction-response' mode using the fine-tuned weights of [Stanford Alpaca](https://github.com/tatsu-lab/stanford_alpaca), continue the setup with the following steps:
@@ -50,15 +60,20 @@ If you would like to try the 'instruction-response' mode using the fine-tuned we
 `git clone https://github.com/tloen/alpaca-lora`
 
 **7. Download the fine-tuned weights**
+>>>>>>> fdf4c78fd77d35f4dd026e1ae1698d51cabd4106
 
 ```bash
-python3 alpaca-lora/export_state_dict_checkpoint.py
+python3 export_state_dict_checkpoint.py 7B
 python3 clean_hf_cache.py
 ```
 
+<<<<<<< HEAD
+**4. Run the inference**
+=======
 **8. Run the Alpaca inference**
+>>>>>>> fdf4c78fd77d35f4dd026e1ae1698d51cabd4106
 
-`python3 chat.py --ckpt_dir alpaca-lora/ckpt --tokenizer_path models/tokenizer.model`
+`python3 chat.py --ckpt_dir models/7B-alpaca --tokenizer_path models/tokenizer.model --max_batch_size 8 --max_seq_len 256`
 
 ### Memory requirements
 
@@ -90,7 +105,7 @@ If you have spare memory (e.g., when running the 13B model on a 64 GB Mac), you 
 
 **- max_seq_len**
 
-To increase/decrease the length of the generated text, use the `--max_seq_len=256` argument. Default value is `512`.
+To increase/decrease the maximum length of generated text, use the `--max_seq_len=256` argument. Default value is `512`.
 
 **- use_repetition_penalty**
 
@@ -114,4 +129,4 @@ See the below comparison when deciding which implementation better fits your use
 - remixer-dec ([mps optimizations](https://github.com/remixer-dec/llama-mps))
 - venuatu ([continuous token printing](https://github.com/venuatu/llama/commit/25c84973f71877677547453dab77eeaea9a86376) / [loading optimizations](https://github.com/venuatu/llama/commit/0d2bb5a552114b69db588175edd3e55303f029be))
 - benob ([reshard script](https://gist.github.com/benob/4850a0210b01672175942203aa36d300))
-- tloen ([repetition penalty](https://github.com/tloen/llama-int8) / [alpaca weights](https://github.com/tloen/alpaca-lora))
+- tloen ([repetition penalty](https://github.com/tloen/llama-int8) / [LoRA merge script](https://github.com/tloen/alpaca-lora/blob/main/export_state_dict_checkpoint.py))

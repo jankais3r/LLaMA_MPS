@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# modified from https://gist.github.com/benob/4850a0210b01672175942203aa36d300
+
 # script to decompose/recompose llama model in different number of shards
 # note that it loads the full model * 2 in cpu memory
 

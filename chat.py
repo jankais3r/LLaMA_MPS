@@ -19,7 +19,6 @@ import time
 import json
 import torch
 import random
-import hashlib
 import pyarrow as pa
 from pathlib import Path
 from llama import ModelArgs, Transformer, Tokenizer, LLaMA
@@ -105,15 +104,13 @@ def main(
 ):
 
     generator = load(ckpt_dir, tokenizer_path, max_seq_len, max_batch_size)
-
-    with open(ckpt_dir + "/arrow/00/layers.0.attention.wq.weight", "rb") as f:
-        fdata = f.read()
-    if hashlib.md5(fdata).hexdigest() == "4f58639de4ca491a6465691579a78980":
+    
+    if 'B-alpaca' in ckpt_dir:
         alpaca_mode = True
-        print("Running in fine-tuned 'alpaca' mode (instruction-response).")
+        print("Running the fine-tuned 'alpaca' model in an instruction-response mode.")
     else:
         alpaca_mode = False
-        print("Running in raw 'llama' mode (auto-complete).")
+        print("Running the raw 'llama' model in an auto-complete mode.")
 
     try:
         while True:
