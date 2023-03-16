@@ -19,6 +19,7 @@ import time
 import json
 import torch
 import random
+import hashlib
 import pyarrow as pa
 from pathlib import Path
 from llama import ModelArgs, Transformer, Tokenizer, LLaMA
@@ -93,8 +94,8 @@ def load(
 def main(
     ckpt_dir: str,
     tokenizer_path: str,
-    temperature: float = 0.8,
-    top_p: float = 0.95,
+    temperature: float = 0.7,
+    top_p: float = 0.75,
     use_repetition_penalty: bool = True,
     repetition_penalty_range: int = 1024,
     repetition_penalty_slope: float = 0,
@@ -105,10 +106,28 @@ def main(
 
     generator = load(ckpt_dir, tokenizer_path, max_seq_len, max_batch_size)
 
+    with open(ckpt_dir + "/arrow/00/layers.0.attention.wq.weight", "rb") as f:
+        fdata = f.read()
+    if hashlib.md5(fdata).hexdigest() == "4f58639de4ca491a6465691579a78980":
+        alpaca_mode = True
+        print("Running in fine-tuned 'alpaca' mode (instruction-response).")
+    else:
+        alpaca_mode = False
+        print("Running in raw 'llama' mode (auto-complete).")
+
     try:
         while True:
-            queryInputs = [input("Enter your LLaMA prompt: ")]
-            print("Thinking...")
+            if alpaca_mode:
+                queryInputs = [
+                    f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
+### Instruction:
+{input("Instruction: ")}
+### Response:"""
+                ]
+                print("Response: ", end="")
+            else:
+                queryInputs = [input("Enter your LLaMA prompt: ")]
+                print("Thinking...")
             queryTime = time.time()
             results = generator.generate(
                 queryInputs,
@@ -120,7 +139,7 @@ def main(
                 repetition_penalty_slope=repetition_penalty_slope,
                 repetition_penalty=repetition_penalty,
             )
-            print(f"\nInferred in {time.time() - queryTime:.2f} seconds")
+            print(f"\n\nInferred in {time.time() - queryTime:.2f} seconds")
             print("==================================\n")
     except KeyboardInterrupt:
         sys.exit()

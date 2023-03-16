@@ -17,8 +17,8 @@ class LLaMA:
         self,
         prompts: List[str],
         max_gen_len: int,
-        temperature: float = 0.8,
-        top_p: float = 0.95,
+        temperature: float = 0.7,
+        top_p: float = 0.75,
         use_repetition_penalty: bool = True,
         repetition_penalty_range: int = 1024,
         repetition_penalty_slope: float = 0.7,
@@ -73,6 +73,8 @@ class LLaMA:
             next_token = torch.where(
                 input_text_mask[:, cur_pos], tokens[:, cur_pos], next_token
             )
+            if tokens[:, cur_pos-1] == self.tokenizer.eos_id:
+                break
             tokens[:, cur_pos] = next_token
             prev_pos = cur_pos
 

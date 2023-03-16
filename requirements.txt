@@ -1,4 +1,8 @@
 fire
 torch
+loralib
 pyarrow
+datasets
 sentencepiece
+git+https://github.com/huggingface/peft.git
+git+https://github.com/zphang/transformers@c3dc391
