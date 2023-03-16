@@ -33,7 +33,7 @@ mkdir models/13B
 python3 reshard.py 1 models/13B_orig models/13B
 ```
 
-**5. Run the inference**
+**5. Run the LLaMA inference**
 
 `python3 chat.py --ckpt_dir models/13B --tokenizer_path models/tokenizer.model --max_batch_size 8 --max_seq_len 256`
 
@@ -47,7 +47,7 @@ If you would like to try the 'instruction-response' mode using the fine-tuned we
 
 **6. Clone the alpaca-lora repo**
 
-`git clone https://github.com/tloen/alpaca-lora/tree/main`
+`git clone https://github.com/tloen/alpaca-lora`
 
 **7. Download the fine-tuned weights**
 
@@ -56,7 +56,7 @@ python3 alpaca-lora/export_state_dict_checkpoint.py
 python3 clean_hf_cache.py
 ```
 
-**8. Run the inference**
+**8. Run the Alpaca inference**
 
 `python3 chat.py --ckpt_dir alpaca-lora/ckpt --tokenizer_path models/tokenizer.model`
 
