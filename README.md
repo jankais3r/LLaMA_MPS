@@ -36,7 +36,7 @@ mkdir models/13B
 python3 reshard.py 1 models/13B_orig models/13B
 ```
 
-**5. Run the LLaMA inference**
+**5. Run the inference**
 
 `python3 chat.py --ckpt_dir models/13B --tokenizer_path models/tokenizer.model --max_batch_size 8 --max_seq_len 256`
 
@@ -48,30 +48,14 @@ If you would like to try the 'instruction-response' mode similar to ChatGPT usin
 
 ![Alpaca demo](alpaca.gif)
 
-<<<<<<< HEAD
 **3. Download the fine-tuned weights (available for 7B/13B)**
-=======
-The above steps will let you run inference on the raw LLaMA model in an 'auto-complete' mode.
-
-If you would like to try the 'instruction-response' mode using the fine-tuned weights of [Stanford Alpaca](https://github.com/tatsu-lab/stanford_alpaca), continue the setup with the following steps:
-
-**6. Clone the alpaca-lora repo**
-
-`git clone https://github.com/tloen/alpaca-lora`
-
-**7. Download the fine-tuned weights**
->>>>>>> fdf4c78fd77d35f4dd026e1ae1698d51cabd4106
 
 ```bash
 python3 export_state_dict_checkpoint.py 7B
 python3 clean_hf_cache.py
 ```
 
-<<<<<<< HEAD
 **4. Run the inference**
-=======
-**8. Run the Alpaca inference**
->>>>>>> fdf4c78fd77d35f4dd026e1ae1698d51cabd4106
 
 `python3 chat.py --ckpt_dir models/7B-alpaca --tokenizer_path models/tokenizer.model --max_batch_size 8 --max_seq_len 256`
 
