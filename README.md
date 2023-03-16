@@ -52,7 +52,9 @@ If you would like to try the 'instruction-response' mode using the fine-tuned we
 **7. Download the fine-tuned weights**
 
 ```bash
-python3 alpaca-lora/export_state_dict_checkpoint.py
+cd alpaca-lora
+python3 export_state_dict_checkpoint.py
+cd ..
 python3 clean_hf_cache.py
 ```
 
