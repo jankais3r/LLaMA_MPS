@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # modified from https://github.com/tloen/alpaca-lora/blob/main/export_state_dict_checkpoint.py
 
+from transformers import LlamaTokenizer, LlamaForCausalLM
 import os
 import sys
 import json
@@ -11,61 +12,62 @@ from peft import PeftModel, LoraConfig
 assert (
     "LlamaTokenizer" in transformers._import_structure["models.llama"]
 ), "LLaMA is now in HuggingFace's main branch.\nPlease reinstall it: pip3 uninstall transformers && pip3 install git+https://github.com/huggingface/transformers.git"
-from transformers import LlamaTokenizer, LlamaForCausalLM
+
+
+def info_and_exit():
+    print("Run as: python3 export_state_dict_checkpoint.py 7B")
+    print("     or python3 export_state_dict_checkpoint.py 13B")
+    print("     or python3 export_state_dict_checkpoint.py 30B")
+    sys.exit()
+
 
 if len(sys.argv) != 2:
-    print("Run as: python3 export_state_dict_checkpoint.py 7B")
-    print("     or python3 export_state_dict_checkpoint.py 13B")
-    sys.exit()
+    info_and_exit()
 
-if sys.argv[1] == "7B":
-    tokenizer = LlamaTokenizer.from_pretrained("decapoda-research/llama-7b-hf")
-    base_model = LlamaForCausalLM.from_pretrained(
-        "decapoda-research/llama-7b-hf",
-        load_in_8bit=False,
-        torch_dtype=torch.float16,
-        device_map={"": "cpu"},
-    )
-    lora_model = PeftModel.from_pretrained(
-        base_model,
+models_info = {
+    "7B": [
         "tloen/alpaca-lora-7b",
-        device_map={"": "cpu"},
-        torch_dtype=torch.float16,
-    )
-    params = {
-        "dim": 4096,
-        "multiple_of": 256,
-        "n_heads": 32,
-        "n_layers": 32,
-        "norm_eps": 1e-06,
-        "vocab_size": -1,
-    }
-elif sys.argv[1] == "13B":
-    tokenizer = LlamaTokenizer.from_pretrained("decapoda-research/llama-13b-hf")
+        {"dim": 4096, "multiple_of": 256, "n_heads": 32,
+            "n_layers": 32, "norm_eps": 1e-06, "vocab_size": -1, }
+    ],
+    "13B": [
+        "samwit/alpaca13B-lora",
+        {"dim": 5120, "multiple_of": 256, "n_heads": 40,
+         "n_layers": 40, "norm_eps": 1e-06, "vocab_size": -1, }
+    ],
+    "30B": [
+        "baseten/alpaca-30b",
+        {"dim": 6656, "multiple_of": 256, "n_heads": 52,
+            "n_layers": 60, "norm_eps": 1e-06, "vocab_size": -1, }
+    ],
+}
+
+
+def download_model(n):
+    d_llama = f"decapoda-research/llama-{n}b-hf"
+    tokenizer = LlamaTokenizer.from_pretrained(d_llama)
     base_model = LlamaForCausalLM.from_pretrained(
-        "decapoda-research/llama-13b-hf",
+        d_llama,
         load_in_8bit=False,
         torch_dtype=torch.float16,
         device_map={"": "cpu"},
     )
     lora_model = PeftModel.from_pretrained(
         base_model,
-        "samwit/alpaca13B-lora",
+        models_info[f"{n}B"][0],
         device_map={"": "cpu"},
         torch_dtype=torch.float16,
     )
-    params = {
-        "dim": 5120,
-        "multiple_of": 256,
-        "n_heads": 40,
-        "n_layers": 40,
-        "norm_eps": 1e-06,
-        "vocab_size": -1,
-    }
+    params = models_info[f"{n}B"][1]
+    return tokenizer, base_model, lora_model, params
+
+
+# get n from 7B, 13B, 30B
+n = int(sys.argv[1][:-1])
+if n in [7, 13, 30]:
+    tokenizer, base_model, lora_model, params = download_model(n)
 else:
-    print("Run as: python3 export_state_dict_checkpoint.py 7B")
-    print("     or python3 export_state_dict_checkpoint.py 13B")
-    sys.exit()
+    info_and_exit()
 
 for layer in lora_model.base_model.model.model.layers:
     layer.self_attn.q_proj.merge_weights = True
@@ -78,18 +80,21 @@ n_heads = params["n_heads"]
 dim = params["dim"]
 dims_per_head = dim // n_heads
 base = 10000.0
-inv_freq = 1.0 / (base ** (torch.arange(0, dims_per_head, 2).float() / dims_per_head))
+inv_freq = 1.0 / \
+    (base ** (torch.arange(0, dims_per_head, 2).float() / dims_per_head))
 
 
 def permute(w):
     return (
-        w.view(n_heads, dim // n_heads // 2, 2, dim).transpose(1, 2).reshape(dim, dim)
+        w.view(n_heads, dim // n_heads // 2, 2,
+               dim).transpose(1, 2).reshape(dim, dim)
     )
 
 
 def unpermute(w):
     return (
-        w.view(n_heads, 2, dim // n_heads // 2, dim).transpose(1, 2).reshape(dim, dim)
+        w.view(n_heads, 2, dim // n_heads // 2,
+               dim).transpose(1, 2).reshape(dim, dim)
     )
 
 
@@ -140,13 +145,13 @@ for k, v in lora_model_sd.items():
         else:
             new_state_dict[new_k] = v
 
-if sys.argv[1] == "7B":
-    os.makedirs("models/7B-alpaca", exist_ok=True)
-    torch.save(new_state_dict, "models/7B-alpaca/consolidated.00.pth")
-    with open("models/7B-alpaca/params.json", "w") as f:
+
+def save_model(n):
+    os.makedirs(f"models/{n}B-alpaca", exist_ok=True)
+    torch.save(new_state_dict, f"models/{n}B-alpaca/consolidated.00.pth")
+    with open(f"models/{n}B-alpaca/params.json", "w") as f:
         json.dump(params, f)
-elif sys.argv[1] == "13B":
-    os.makedirs("models/13B-alpaca", exist_ok=True)
-    torch.save(new_state_dict, "models/13B-alpaca/consolidated.00.pth")
-    with open("models/13B-alpaca/params.json", "w") as f:
-        json.dump(params, f)
+
+
+if n in [7, 13, 30]:
+    save_model(n)
