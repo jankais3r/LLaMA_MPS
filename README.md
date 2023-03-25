@@ -48,7 +48,7 @@ If you would like to try the 'instruction-response' mode similar to ChatGPT usin
 
 ![Alpaca demo](alpaca.gif)
 
-**3. Download the fine-tuned weights (available for 7B/13B)**
+**3. Download the fine-tuned weights (available for 7B/13B/30B)**
 
 ```bash
 python3 export_state_dict_checkpoint.py 7B
